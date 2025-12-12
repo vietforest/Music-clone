@@ -51,8 +51,10 @@ export default function Playlist({ title, tracks, playTrack, playlistImage }) {
 
             {/* Scroll area */}
             <div style={{ maxHeight: "60vh", overflowY: "auto" }}>
-                {tracks.map((track) => {
+                {tracks.map((track, index) => {
                     if (!track) return null;
+
+                    const key = track.id ? `${track.id}-${index}` : `fallback-${index}`;
 
                     const img = track.album?.images?.[2]?.url || track.album?.images?.[0]?.url;
                     const durationMs = track.duration_ms || 0;
@@ -63,7 +65,7 @@ export default function Playlist({ title, tracks, playTrack, playlistImage }) {
 
                     return (
                         <div
-                            key={track.id}
+                            key={key}
                             className="d-flex align-items-center playlist-row"
                             style={{
                                 padding: "10px 15px",
@@ -75,7 +77,6 @@ export default function Playlist({ title, tracks, playTrack, playlistImage }) {
                             onMouseEnter={(e) => (e.currentTarget.style.background = "#2a2a2a")}
                             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                         >
-                            {/* Album Art */}
                             <div style={{ width: "40px", marginRight: "10px" }}>
                                 <img
                                     src={img}
@@ -89,18 +90,11 @@ export default function Playlist({ title, tracks, playTrack, playlistImage }) {
                                 />
                             </div>
 
-                            {/* Title */}
                             <div style={{ flex: 2, fontSize: "15px", fontWeight: "500" }}>{track.name}</div>
-
-                            {/* Album */}
                             <div style={{ flex: 2, fontSize: "14px", color: "#ccc" }}>{track.album?.name}</div>
-
-                            {/* Artist */}
                             <div style={{ flex: 1, fontSize: "14px", color: "#ccc" }}>
                                 {track.artists?.map((a) => a.name).join(", ")}
                             </div>
-
-                            {/* Duration */}
                             <div style={{ width: "50px", textAlign: "right", color: "#ccc" }}>
                                 {minutes}:{seconds}
                             </div>

@@ -1,10 +1,25 @@
-import { useEffect, useState, useRef } from "react";
+// useSpotifyAuth.js
+import { useState, useEffect, useRef } from "react";
 
 const clientId = "e6397628a2d64070a7a9392d958afdb4";
 const redirectUrl = "http://127.0.0.1:3000";
+
 const authorizationEndpoint = "https://accounts.spotify.com/authorize";
 const tokenEndpoint = "https://accounts.spotify.com/api/token";
-const scope = "user-read-private user-read-email streaming user-read-playback-state user-modify-playback-state user-read-recently-played";
+const API_BASE = "https://api.spotify.com/v1";
+
+const scope = [
+    "user-read-private",
+    "user-read-email",
+    "streaming",
+    "user-read-playback-state",
+    "user-modify-playback-state",
+    "user-read-recently-played",
+    "playlist-read-private",
+    "playlist-read-collaborative",
+    "playlist-modify-public",
+    "playlist-modify-private"
+].join(" ");
 
 export default function useSpotifyAuth() {
     const [loading, setLoading] = useState(true);
@@ -18,15 +33,10 @@ export default function useSpotifyAuth() {
     });
     const [user, setUser] = useState(null);
 
-    // ---------------------------
-    // Caching to prevent flicker
-    // ---------------------------
-    const playlistsCache = useRef([]);
+    const playlistsCache = useRef({});
     const recentTracksCache = useRef([]);
 
-    // ---------------------------
-    // Save token to state & localStorage
-    // ---------------------------
+    // Save token
     const saveToken = (data) => {
         const { access_token, refresh_token, expires_in } = data;
         const expires = new Date(Date.now() + expires_in * 1000).toISOString();
@@ -39,16 +49,14 @@ export default function useSpotifyAuth() {
         setToken({ access_token, refresh_token, expires_in, expires });
     };
 
-    // ---------------------------
     // PKCE login
-    // ---------------------------
     async function login() {
         const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         const randomValues = crypto.getRandomValues(new Uint8Array(64));
         const code_verifier = [...randomValues].map(x => chars[x % chars.length]).join("");
 
-        const hashed = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(code_verifier));
-        const code_challenge = btoa(String.fromCharCode(...new Uint8Array(hashed)))
+        const hashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(code_verifier));
+        const code_challenge = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)))
             .replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 
         localStorage.setItem("code_verifier", code_verifier);
@@ -64,11 +72,9 @@ export default function useSpotifyAuth() {
         window.location.href = authUrl.toString();
     }
 
-    // ---------------------------
-    // Exchange code for token
-    // ---------------------------
     async function exchangeToken(code) {
         const verifier = localStorage.getItem("code_verifier");
+
         const res = await fetch(tokenEndpoint, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -80,12 +86,10 @@ export default function useSpotifyAuth() {
                 code,
             }),
         });
+
         return res.json();
     }
 
-    // ---------------------------
-    // Refresh token
-    // ---------------------------
     async function refresh() {
         if (!token?.refresh_token) return;
 
@@ -103,28 +107,19 @@ export default function useSpotifyAuth() {
         if (data.access_token) saveToken(data);
     }
 
-    // ---------------------------
-    // Logout
-    // ---------------------------
     function logout() {
         localStorage.clear();
         setToken(null);
         setUser(null);
-        playlistsCache.current = [];
+        playlistsCache.current = {};
         recentTracksCache.current = [];
     }
 
     // ---------------------------
-    // Helper: fetch with retry for 429
+    // Simple fetch (no retry)
     // ---------------------------
-    async function fetchWithRetry(url, options = {}) {
+    async function simpleFetch(url, options = {}) {
         const res = await fetch(url, options);
-        if (res.status === 429) {
-            const retryAfter = parseInt(res.headers.get("Retry-After") || "1", 10) * 1000;
-            console.warn(`Rate limited. Retrying after ${retryAfter}ms...`);
-            await new Promise(r => setTimeout(r, retryAfter));
-            return fetchWithRetry(url, options);
-        }
         if (!res.ok) {
             const body = await res.json().catch(() => ({}));
             throw new Error(body.error?.message || "Spotify API error");
@@ -133,104 +128,133 @@ export default function useSpotifyAuth() {
     }
 
     // ---------------------------
-    // Search tracks
-    // ---------------------------
-    async function searchSpotify(query, type = "track") {
-        if (!token?.access_token || !query) return [];
-        const data = await fetchWithRetry(
-            `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=${type}&limit=10`,
-            { headers: { Authorization: `Bearer ${token.access_token}` } }
-        );
-        return data;
-    }
-
-    // ---------------------------
-    // Playlists
+    // PLAYLISTS — always fetch fresh (no forceRefresh argument)
     // ---------------------------
     async function getUserPlaylists() {
-        if (playlistsCache.current.length) return playlistsCache.current;
-
         if (!token?.access_token) return [];
-        const data = await fetchWithRetry("https://api.spotify.com/v1/me/playlists", {
+
+        const data = await simpleFetch(`${API_BASE}/me/playlists?limit=50`, {
             headers: { Authorization: `Bearer ${token.access_token}` },
         });
-        playlistsCache.current = data.items || [];
-        return playlistsCache.current;
+
+        return data.items || [];
     }
 
     async function getPlaylistTracks(playlistId) {
         if (!token?.access_token) return [];
-        const data = await fetchWithRetry(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+
+        const data = await simpleFetch(`${API_BASE}/playlists/${playlistId}/tracks`, {
             headers: { Authorization: `Bearer ${token.access_token}` },
         });
+
         return data.items.map(i => i.track).filter(Boolean);
     }
 
-    // ---------------------------
-    // Recently played tracks
-    // ---------------------------
-    async function getRecentlyPlayed() {
-        if (recentTracksCache.current.length) return recentTracksCache.current;
+    async function addTracksToPlaylist(playlistId, trackUri) {
+        if (!token?.access_token) throw new Error("Missing access token");
 
-        if (!token?.access_token) return [];
-        const data = await fetchWithRetry(`https://api.spotify.com/v1/me/player/recently-played?limit=20`, {
-            headers: { Authorization: `Bearer ${token.access_token}` },
+        const res = await fetch(`${API_BASE}/playlists/${playlistId}/tracks`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token.access_token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ uris: [trackUri] }),
         });
-        const tracks = data.items.map(i => i.track).filter(Boolean);
-        recentTracksCache.current = tracks;
-        return tracks;
+
+        if (!res.ok) throw new Error("Failed to add track");
     }
 
-    // ---------------------------
-    // OAuth redirect handling
-    // ---------------------------
+    async function createPlaylist(name, isPublic = false) {
+        if (!token?.access_token || !user?.id) throw new Error("Missing auth or user info");
+
+        return simpleFetch(`${API_BASE}/users/${user.id}/playlists`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token.access_token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ name, public: isPublic }),
+        });
+    }
+
+    async function deletePlaylist(playlistId) {
+        if (!token?.access_token) throw new Error("Missing access token");
+
+        const res = await fetch(`${API_BASE}/playlists/${playlistId}/followers`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token.access_token}` },
+        });
+
+        if (!res.ok) throw new Error("Failed to delete playlist");
+    }
+
+    // RECENTLY PLAYED
+    async function getRecentlyPlayed() {
+        if (!token?.access_token) return [];
+
+        const data = await simpleFetch(`${API_BASE}/me/player/recently-played?limit=50`, {
+            headers: { Authorization: `Bearer ${token.access_token}` },
+        });
+
+        return data.items.map(i => i.track).filter(Boolean);
+    }
+
+    // Redirect handling
     useEffect(() => {
-        let isMounted = true;
+        let mounted = true;
 
         async function handleRedirect() {
             const params = new URLSearchParams(window.location.search);
             const code = params.get("code");
 
             if (!code) {
-                if (isMounted) setLoading(false);
+                if (mounted) setLoading(false);
                 return;
             }
 
-            try {
-                const data = await exchangeToken(code);
-                if (isMounted && data.access_token) saveToken(data);
-                window.history.replaceState({}, "", window.location.pathname);
-            } finally {
-                if (isMounted) setLoading(false);
-            }
+            const data = await exchangeToken(code);
+            if (mounted && data.access_token) saveToken(data);
+
+            window.history.replaceState({}, "", window.location.pathname);
+            if (mounted) setLoading(false);
         }
 
         handleRedirect();
-        return () => { isMounted = false; };
+        return () => (mounted = false);
     }, []);
 
-    // ---------------------------
-    // Load Spotify user
-    // ---------------------------
+    // Load user
     useEffect(() => {
-        let isMounted = true;
+        let mounted = true;
+
         async function loadUser() {
             if (!token?.access_token) {
-                if (isMounted) setLoading(false);
+                if (mounted) setLoading(false);
                 return;
             }
-            try {
-                const data = await fetchWithRetry("https://api.spotify.com/v1/me", {
-                    headers: { Authorization: `Bearer ${token.access_token}` },
-                });
-                if (isMounted) setUser(data);
-            } finally {
-                if (isMounted) setLoading(false);
-            }
+
+            const data = await simpleFetch(`${API_BASE}/me`, {
+                headers: { Authorization: `Bearer ${token.access_token}` },
+            });
+
+            if (mounted) setUser(data);
+            if (mounted) setLoading(false);
         }
+
         loadUser();
-        return () => { isMounted = false; };
+        return () => (mounted = false);
     }, [token?.access_token]);
+
+    // Search
+    async function searchSpotify(query, type = "track") {
+        if (!token?.access_token) return [];
+
+        return simpleFetch(
+            `${API_BASE}/search?q=${encodeURIComponent(query)}&type=${type}&limit=10`,
+            { headers: { Authorization: `Bearer ${token.access_token}` } }
+        );
+    }
 
     return {
         loading,
@@ -243,5 +267,8 @@ export default function useSpotifyAuth() {
         getUserPlaylists,
         getPlaylistTracks,
         getRecentlyPlayed,
+        addTracksToPlaylist,
+        createPlaylist,
+        deletePlaylist,
     };
 }
