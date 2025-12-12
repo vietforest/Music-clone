@@ -1,0 +1,199 @@
+/* Spotify-style dark theme for your app */
+/* Put this file at src/style.css and import it in main.jsx or App.jsx:
+   import './style.css';
+*/
+
+/* Theme variables */
+:root{
+    --bg:#2B2E33;
+    --panel:#181818;
+    --muted:#b3b3b3;
+    --accent:#1db954; /* Spotify green */
+    --accent-2:#1ed760;
+    --card:#242424;
+    --glass: rgba(255,255,255,0.03);
+    --border: rgba(255,255,255,0.06);
+    --shadow: 0 6px 18px rgba(0,0,0,0.6);
+    --radius: 12px;
+    --gap: 12px;
+    --text:#e6e6e6;
+    --subtext:#a9a9a9;
+    --muted-2:#8a8a8a;
+    --glass-2: rgba(255,255,255,0.02);
+    --trans-10: rgba(255,255,255,0.10);
+}
+
+/* Base */
+*{box-sizing:border-box}
+html,body,#root{height:100%;background:var(--bg);color:var(--text);font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:0}
+a{color:inherit}
+button{cursor:pointer}
+
+/* App layout helpers */
+.app-root {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    gap: var(--gap);
+    overflow: hidden;
+}
+
+/* Left sidebar */
+.sidebar {
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04));
+    border-right: 1px solid var(--border);
+    width: 280px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    overflow-y: auto;
+}
+
+/* Profile card (LoggedIn / Profile) */
+.profile-card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    padding: 16px;
+    border-radius: 10px;
+    border: 1px solid var(--glass-2);
+    box-shadow: var(--shadow);
+    display:flex;
+    gap:12px;
+    align-items:center;
+}
+.profile-card img{border-radius:8px; width:64px; height:64px; object-fit:cover}
+.profile-card .meta{display:flex;flex-direction:column}
+.profile-card .meta .name{font-weight:700; font-size:1rem; color:var(--text)}
+.profile-card .meta .sub{font-size:0.85rem; color:var(--subtext)}
+
+/* OAuth info box */
+.oauth-info {
+    background: transparent;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--glass-2);
+    color:var(--muted);
+    font-size:0.85rem;
+}
+
+/* Main content area (right) */
+.content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+    overflow: hidden;
+}
+
+/* Search input / controls */
+.search-row {
+    display:flex;
+    gap:8px;
+    align-items:center;
+}
+
+.search-input {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color:var(--text);
+    padding: 10px 12px;
+    border-radius: 8px;
+    outline: none;
+    width:100%;
+    transition: box-shadow .15s, transform .08s;
+    box-shadow: none;
+}
+.search-input::placeholder{color:var(--muted)}
+.search-input:focus{
+    box-shadow: 0 6px 20px rgba(29,185,84,0.08);
+    border-color: rgba(29,185,84,0.4);
+    transform: translateY(-1px);
+}
+
+/* Spotify-styled button */
+.btn-spotify {
+    background: linear-gradient(180deg,var(--accent),var(--accent-2));
+    color: #04120a;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-weight:600;
+    box-shadow: 0 6px 14px rgba(29,185,84,0.18);
+}
+.btn-spotify.outline {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.06);
+    color: var(--text);
+    box-shadow: none;
+}
+
+/* Results list */
+.results {
+    overflow-y: auto;
+    padding: 8px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+.result-item {
+    background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02));
+    border: 1px solid var(--glass-2);
+    padding: 10px;
+    border-radius: 10px;
+    display:flex;
+    gap:12px;
+    align-items:center;
+    transition: transform .12s ease, background .12s;
+}
+.result-item:hover{
+    transform: translateY(-4px);
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04));
+}
+.result-item img{width:56px;height:56px;border-radius:6px;object-fit:cover}
+.result-meta{flex:1;display:flex;flex-direction:column}
+.result-meta .title{font-weight:700;color:var(--text)}
+.result-meta .subtitle{color:var(--muted);font-size:0.9rem;margin-top:4px}
+
+/* Small control buttons */
+.control-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.04);
+    color: var(--text);
+    padding: 8px;
+    border-radius: 8px;
+}
+
+/* Player footer */
+.player-footer {
+    background: linear-gradient(180deg, rgba(0,0,0,0.08), rgb(0, 0, 0));
+    border-top: 1px solid var(--border);
+    padding: 12px 20px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+}
+.player-track-art{width:56px;height:56px;border-radius:6px;object-fit:cover}
+.player-info{flex:1;display:flex;flex-direction:column}
+.player-info .title{font-weight:700;color:var(--text)}
+.player-info .artists{color:var(--muted);font-size:0.9rem;margin-top:4px}
+
+/* Footer control group */
+.player-controls{display:flex;gap:8px;align-items:center}
+
+/* responsive tweaks */
+@media (max-width: 980px) {
+    .sidebar{display:none}
+    .app-root{padding:0}
+    .content{padding:12px}
+}
+
+/* subtle scrollbars */
+.results::-webkit-scrollbar, .sidebar::-webkit-scrollbar {
+    width: 10px;
+}
+.results::-webkit-scrollbar-thumb, .sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    border: 2px solid transparent;
+}
