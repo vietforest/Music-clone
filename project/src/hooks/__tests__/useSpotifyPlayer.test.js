@@ -92,19 +92,5 @@ describe('useSpotifyPlayer', () => {
 
   });
 
-  describe('Player State', () => {
-  });
-
-  describe('Playback Controls', () => {
-  });
-
-  describe('Repeat Mode', () => {
-  });
-
-  describe('Position Updates', () => {
-  });
-
-  describe('Cleanup', () => {
-  });
 });
 

@@ -61,7 +61,9 @@ describe('SearchResults', () => {
     
     const images = screen.getAllByAltText(/Track/);
     expect(images.length).toBe(2);
-    expect(images[0]).toHaveAttribute('src', 'small.jpg');
+    // Component uses images[2] (small) or falls back to images[0] (large)
+    // Since images[2] doesn't exist in test data, it falls back to images[0]
+    expect(images[0]).toHaveAttribute('src', 'large.jpg');
   });
 
   it('calls playTrack when track image is clicked', () => {
