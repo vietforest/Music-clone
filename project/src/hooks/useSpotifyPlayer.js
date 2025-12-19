@@ -6,9 +6,9 @@ export default function useSpotifyPlayer(accessToken) {
     const [track, setTrack] = useState(null);
     const [paused, setPaused] = useState(true);
     const [volume, setVolume] = useState(50);
-    const [position, setPosition] = useState(0);       // ✅ Current playback position
-    const [duration, setDuration] = useState(0);       // ✅ Track duration
-    const [repeatMode, setRepeatMode] = useState("off"); // "off" | "track" | "context"
+    const [position, setPosition] = useState(0);       
+    const [duration, setDuration] = useState(0);      
+    const [repeatMode, setRepeatMode] = useState("off"); 
 
     const playerRef = useRef(null);
     const scriptLoadedRef = useRef(false);
