@@ -1,4 +1,4 @@
-export default function Playlist({ title, tracks, playTrack, playlistImage }) {
+export default function Playlist({ title, tracks, playTrack, playlistImage, onRemoveTrack, allTracks = null }) {
     if (!tracks || tracks.length === 0) {
         return <div className="p-3 text-muted">No songs in this playlist.</div>;
     }
@@ -47,14 +47,13 @@ export default function Playlist({ title, tracks, playTrack, playlistImage }) {
                 <div style={{ flex: 2 }}>Album</div>
                 <div style={{ flex: 1 }}>Artist</div>
                 <div style={{ width: "50px", textAlign: "right" }}>⏱️</div>
+                {onRemoveTrack && <div style={{ width: "40px" }}></div>}
             </div>
 
             {/* Scroll area */}
             <div style={{ maxHeight: "60vh", overflowY: "auto" }}>
-                {tracks.map((track, index) => {
+                {tracks.map((track) => {
                     if (!track) return null;
-
-                    const key = track.id ? `${track.id}-${index}` : `fallback-${index}`;
 
                     const img = track.album?.images?.[2]?.url || track.album?.images?.[0]?.url;
                     const durationMs = track.duration_ms || 0;
@@ -65,7 +64,7 @@ export default function Playlist({ title, tracks, playTrack, playlistImage }) {
 
                     return (
                         <div
-                            key={key}
+                            key={track.id}
                             className="d-flex align-items-center playlist-row"
                             style={{
                                 padding: "10px 15px",
@@ -73,10 +72,15 @@ export default function Playlist({ title, tracks, playTrack, playlistImage }) {
                                 borderBottom: "1px solid #222",
                                 transition: "background 0.2s",
                             }}
-                            onClick={() => playTrack(track.uri)}
+                            onClick={() => {
+                                const contextTracks = allTracks || tracks;
+                                const trackIndex = contextTracks.findIndex(t => t.id === track.id);
+                                playTrack(track.uri, trackIndex, contextTracks);
+                            }}
                             onMouseEnter={(e) => (e.currentTarget.style.background = "#2a2a2a")}
                             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                         >
+                            {/* Album Art */}
                             <div style={{ width: "40px", marginRight: "10px" }}>
                                 <img
                                     src={img}
@@ -90,14 +94,56 @@ export default function Playlist({ title, tracks, playTrack, playlistImage }) {
                                 />
                             </div>
 
+                            {/* Title */}
                             <div style={{ flex: 2, fontSize: "15px", fontWeight: "500" }}>{track.name}</div>
+
+                            {/* Album */}
                             <div style={{ flex: 2, fontSize: "14px", color: "#ccc" }}>{track.album?.name}</div>
+
+                            {/* Artist */}
                             <div style={{ flex: 1, fontSize: "14px", color: "#ccc" }}>
                                 {track.artists?.map((a) => a.name).join(", ")}
                             </div>
+
+                            {/* Duration */}
                             <div style={{ width: "50px", textAlign: "right", color: "#ccc" }}>
                                 {minutes}:{seconds}
                             </div>
+                            
+                            {/* Remove button */}
+                            {onRemoveTrack && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onRemoveTrack(track.uri);
+                                    }}
+                                    style={{
+                                        background: "transparent",
+                                        border: "none",
+                                        color: "#b3b3b3",
+                                        padding: "4px 8px",
+                                        borderRadius: "4px",
+                                        fontSize: "18px",
+                                        cursor: "pointer",
+                                        opacity: 0.7,
+                                        transition: "all 0.2s",
+                                        marginLeft: "10px"
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.background = "#e22134";
+                                        e.currentTarget.style.color = "white";
+                                        e.currentTarget.style.opacity = 1;
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.background = "transparent";
+                                        e.currentTarget.style.color = "#b3b3b3";
+                                        e.currentTarget.style.opacity = 0.7;
+                                    }}
+                                    title="Remove from playlist"
+                                >
+                                    ×
+                                </button>
+                            )}
                         </div>
                     );
                 })}

@@ -189,11 +189,14 @@ button{cursor:pointer}
 }
 
 /* subtle scrollbars */
-.results::-webkit-scrollbar, .sidebar::-webkit-scrollbar {
+.results::-webkit-scrollbar, .sidebar::-webkit-scrollbar, .playlist-scrollable::-webkit-scrollbar {
     width: 10px;
 }
-.results::-webkit-scrollbar-thumb, .sidebar::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.04);
+.results::-webkit-scrollbar-thumb, .sidebar::-webkit-scrollbar-thumb, .playlist-scrollable::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
     border-radius: 10px;
     border: 2px solid transparent;
+}
+.results::-webkit-scrollbar-track, .sidebar::-webkit-scrollbar-track, .playlist-scrollable::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.2);
 }

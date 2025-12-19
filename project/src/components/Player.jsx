@@ -10,7 +10,9 @@ export default function Player({
                                    changeVolume,
                                    position,
                                    duration,
-                                   seek
+                                   seek,
+                                   repeatMode,
+                                   toggleRepeat
                                }) {
     const [localPosition, setLocalPosition] = useState(position);
 
@@ -51,12 +53,52 @@ export default function Player({
                 className="player-controls col"
                 style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
             >
-                <div style={{ display: "flex", gap: "15px" }}>
-                    <button className="control-btn" onClick={previousTrack}>⏮</button>
-                    <button className="control-btn" onClick={togglePlay}>
-                        {paused ? "▶" : "⏸"}
-                    </button>
-                    <button className="control-btn" onClick={nextTrack}>⏭</button>
+                <div style={{ display: "flex", gap: "15px", alignItems: "center", flexDirection: "column" }}>
+                    <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+                        <button 
+                            className="control-btn" 
+                            onClick={toggleRepeat}
+                            style={{
+                                color: repeatMode !== "off" ? "#1db954" : "#b3b3b3",
+                                background: repeatMode !== "off" ? "rgba(29, 185, 84, 0.2)" : "transparent",
+                                border: repeatMode !== "off" ? "1px solid #1db954" : "1px solid transparent",
+                                borderRadius: "50%",
+                                width: "40px",
+                                height: "40px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: "18px",
+                                transition: "all 0.2s"
+                            }}
+                            title={
+                                repeatMode === "off" ? "Enable repeat" :
+                                repeatMode === "track" ? "Looping track (click for playlist loop)" :
+                                "Looping playlist (click to disable)"
+                            }
+                        >
+                            {repeatMode === "track" ? "🔂" : "🔁"}
+                        </button>
+                        <button className="control-btn" onClick={previousTrack}>⏮</button>
+                        <button className="control-btn" onClick={togglePlay}>
+                            {paused ? "▶" : "⏸"}
+                        </button>
+                        <button className="control-btn" onClick={nextTrack}>⏭</button>
+                    </div>
+                    
+                    {/* Loop Mode Indicator */}
+                    {repeatMode !== "off" && (
+                        <div style={{
+                            fontSize: "11px",
+                            color: "#1db954",
+                            fontWeight: "600",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.5px",
+                            marginTop: "-5px"
+                        }}>
+                            {repeatMode === "track" ? "Looping Track" : "Looping Playlist"}
+                        </div>
+                    )}
                 </div>
 
                 {/* 🎵 Playback Progress Bar Under Controls */}
